@@ -1,4 +1,4 @@
-#!coding:utf8
+#coding:utf8
 __author__ = 'cy'
 import pymongo
 import urllib2
@@ -19,12 +19,9 @@ for ii in result:
 
 
 def connect(host):
-    global db, collection
     client = pymongo.MongoClient(host, 27110)
     db = client.test
-    collection = db['moji_data']
-    d=db.city_id.find_one({'key':'city_id'})['data']
-    return d,collection
+    return db
 
 
 # mongodb中每次采集墨迹的数据久新建一个collection, collection的名字是取值当时的时间,
@@ -32,20 +29,19 @@ def connect(host):
 
 
 # city和id的对应关系写入到数据库 zhong的city_id集合中
-def get_cityid(collection,d):
-
+def get_cityid(db):
+    collection = db['moji_data']
+    d=db.city_id.find_one({'key':'city_id'})['data']
+    ids=db.city_id.find_one({'key':'moji2mlog'})['data']
     all_cities = []
     for ii in collection.find():
         begin_time = ii['data'][u'city']['time'].replace(' ', '-').replace(':', '-').split('-')[:4]
         b = ii['data'][u'city']['cityname']
-        if d.has_key(b[:-1]):
-            id = d[b[:-1]]
-        elif d.has_key(b[:-2]) and len(b[:-2]) >= 2:
-            id = d[b[:-2]]
-        else:
+        id=ids.get(b)
+        if not id:
             continue
         try:
-            all_cities.append({'time': begin_time, 'info': ii['data'][u'city']['list'][0]['list'], 'id': id})
+            all_cities.append({'time': begin_time, 'info': ii['data'][u'city']['list'][0]['list'], 'id': id[0]})
         except:
             print ii
     return all_cities
@@ -59,7 +55,8 @@ def get_cityid(collection,d):
 
 
 
-def get_compare(all_cities,d):
+def get_compare(all_cities,db):
+    d=db.city_id.find_one({'key':'city_id'})['data']
     remind_info=[]
     # global ii, begin_time
     # 获取我们的空气数据 测试只取了300个
@@ -67,8 +64,12 @@ def get_compare(all_cities,d):
         begin_time = ''
         for tt in ii['time']: begin_time = begin_time + tt
         end_time = ii['time'][0] + str(ii['time'][1] + str(int(ii['time'][2]) + 1)) + ii['time'][3]
-        url = 'http://openapi.mlogcn.com:8000/api/aqi/fc/area/' + ii['id'] + '/h/' + begin_time + '/' + end_time + u'.json\
+
+        try:
+            url = 'http://openapi.mlogcn.com:8000/api/aqi/fc/area/' + ii['id'] + '/h/' + begin_time + '/' + end_time + u'.json\
 ?appid=27fbe0976bd14ec397cd37add0526bf2&timestamp=1442477082312&key=mqC93zaI9x3whSEEasRHfOMO8bI%3D'
+        except Exception as e:
+            print e,ii
 
         r = urlopen(url)
         rr = eval(r.read())
@@ -90,6 +91,6 @@ def get_compare(all_cities,d):
 
 if __name__ == '__main__':
     host='54.223.178.198'#host='172.31.11.244'
-    d,collection=connect(host)
-    all_cities=get_cityid(collection,d)
-    remind_info=get_compare(all_cities,d)
+    db=connect(host)
+    all_cities=get_cityid(db)
+    remind_info=get_compare(all_cities,db)
