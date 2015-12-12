@@ -1,4 +1,6 @@
 #coding:utf8
+from math import sqrt
+
 __author__ = 'cy'
 import pymongo
 import urllib2
@@ -30,6 +32,11 @@ def connect(host):
 
 # city和id的对应关系写入到数据库 zhong的city_id集合中
 def get_cityid(db):
+    '''
+    获取墨迹天气的数据
+    :param db:
+    :return:
+    '''
     collection = db['moji_data']
     d=db.city_id.find_one({'key':'city_id'})['data']
     ids=db.city_id.find_one({'key':'moji2mlog'})['data']
@@ -46,7 +53,6 @@ def get_cityid(db):
             print ii
     return all_cities
 
-
 ### 获取mongodb(即墨迹)中的城市空气质量信息
 # 墨迹天气中地名用的是`海淀区 `,`郑州市`,`塔里木地区`,而我们的地名是`海淀`,`郑州`,`塔里木`
 # 墨迹总共采集了2500个左右的城市, 其中能在我们的数据中找到对应的有2100多个
@@ -54,22 +60,24 @@ def get_cityid(db):
 
 
 
-
 def get_compare(all_cities,db):
     d=db.city_id.find_one({'key':'city_id'})['data']
     remind_info=[]
-    # global ii, begin_time
     # 获取我们的空气数据 测试只取了300个
-    for ii in all_cities[:300]:
+    results={}
+    for ii in all_cities[:]:
         begin_time = ''
+        #[u'2015', u'12', u'12', u'20']
         for tt in ii['time']: begin_time = begin_time + tt
         end_time = ii['time'][0] + str(ii['time'][1] + str(int(ii['time'][2]) + 1)) + ii['time'][3]
 
         try:
             url = 'http://openapi.mlogcn.com:8000/api/aqi/fc/area/' + ii['id'] + '/h/' + begin_time + '/' + end_time + u'.json\
 ?appid=27fbe0976bd14ec397cd37add0526bf2&timestamp=1442477082312&key=mqC93zaI9x3whSEEasRHfOMO8bI%3D'
+
         except Exception as e:
             print e,ii
+            continue
 
         r = urlopen(url)
         rr = eval(r.read())
@@ -78,12 +86,20 @@ def get_compare(all_cities,db):
             print 'error'
             print ii, url,rr
             print '--------------------'
+            continue
         mlog_data = rr['series']
         moji_data = [qq['aqi'] for qq in ii['info']]
-        for ii in zip(moji_data, mlog_data):
-            # 如果差距过大, 就提醒
-            if float(abs(ii[0] - ii[1])) / (ii[0] + ii[1]) > 0.2 and abs(ii[0] - ii[1]) > 50:
-                remind_info.append({'mlog_data': mlog_data, 'moji_data': moji_data})
+        n= len(moji_data) if len(moji_data)<len(mlog_data) else len(mlog_data)
+        mse=sqrt( float(sum(map(lambda x:(x[0]-x[1])**2, zip(moji_data,mlog_data))))/n)
+        mae= ( float(sum(map(lambda x:abs(x[0]-x[1]), zip(moji_data,mlog_data))))/n)
+        results[ii['id']]=(mae,mse)
+    c=db.compare_results
+    c.insert_one({
+        'key':'moji_compare_results',
+        'data':results,
+        'info':u'储存与墨迹对比的结果 data是个字典 id->(mae,mse)'
+    }
+    )
     return remind_info
 
 
