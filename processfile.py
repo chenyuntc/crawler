@@ -8,7 +8,7 @@ import pymongo
 host = '54.223.178.198'
 from util import get_days, get_files, connect
 start_time = '15-11-01'
-end_time = '15-11-19'
+end_time = '15-11-30'
 gaps = range(1, 25)
 path = '/home/cy/tmp/pm/'
 
@@ -53,7 +53,29 @@ def calculate(all_data, gaps=[1], city=0):
         results[0].append(float(mae) / real_len)
         results[1].append(sqrt(float(mse) / real_len))
     return results
+def calculate_level(all_data, gaps=[1], city=0):
+    '''
+    统计等级差出现的次数
+   :param all_data: 所有的数据, 每一行代表着一个时间的数据,
+   :param gaps: 所有要处理的间隔
+   :param city: 监测站编号
+   :return: 所有间隔(矩阵 2*len(gaps))
+     '''
 
+    results=[]
+    for gap in gaps:
+        real_len = 0
+        tmp={};dist=[]
+        for ii in range(len(all_data) - gap):
+            if all_data[ii] == -1 or all_data[ii + gap] == -1:
+                continue
+            real_len += 1
+            dist.append(abs(all_data[ii][city][gap] - all_data[ii + gap][city][0]))
+        for ii in range(max(dist)+1):
+            if dist.count(ii)>0:
+                tmp[str(ii)]=float(dist.count(ii))/(real_len)
+        results.append(tmp)
+    return results
 
 def calculate2(x, y):
     '''
@@ -174,6 +196,6 @@ if __name__ == '__main__':
         results = calculate(all_data, gaps, ii)#计算mae和mse
         results_24 = calculate2(t_24[0][ii], t_24[1][ii])#计算每晚八点预测的第二天的mae和mse
         results += results_24
-        result_level = calculate(level_data, gaps, ii)#计算基于等级的mae和mse
-        results += result_level
+        result_level = calculate_level(level_data, gaps, ii)#计算基于等级的mae和mse
+        results.append( result_level)
         write2db(db, results, start_time, end_time, ii)
