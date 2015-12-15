@@ -1,3 +1,4 @@
+#coding:utf8
 import time
 
 __author__ = 'cy'
@@ -34,7 +35,7 @@ def station_csv2db(file):
 from qiniu import Auth, put_file
 
 
-def qiniu_upload(data,key,mimetype):
+def qiniu_upload(data,key,mimeType):
     '''
     上传文件
     :param data: 要上传的数据路径 ../pic/info.jpg
@@ -49,7 +50,7 @@ def qiniu_upload(data,key,mimetype):
     #mimetype='image/jpeg'
     token = q.upload_token(bucket, key)
     #data = 'pictures/lena.jpg'
-    put_file(token, key, data, mime_type=mimetype, check_crc=True)
+    put_file(token, key, data, mime_type=mimeType, check_crc=True)
     return 'http://cloudscape.qiniudn.com/%s' %key
 
 #qiniu_upload()
