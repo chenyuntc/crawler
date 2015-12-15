@@ -5,7 +5,7 @@ __author__ = 'cy'
 import pymongo
 import urllib2
 from urllib2 import urlopen
-
+from util import connect
 
 '''
 ### 读取area_coor.txt 获取地名和id的对应关系
@@ -19,18 +19,6 @@ for ii in result:
     d[ii[0].decode('utf8')] = ii[1]
 '''
 
-
-def connect(host):
-    client = pymongo.MongoClient(host, 27110)
-    db = client.test
-    return db
-
-
-# mongodb中每次采集墨迹的数据久新建一个collection, collection的名字是取值当时的时间,
-#  所以对collection的名字进行排序之后, 最靠后的是一个系统的collection, 第二靠后的一个就是最新采集的墨迹空气质量信息
-
-
-# city和id的对应关系写入到数据库 zhong的city_id集合中
 def get_cityid(db):
     '''
     获取墨迹天气的数据
@@ -52,12 +40,6 @@ def get_cityid(db):
         except:
             print ii
     return all_cities
-
-### 获取mongodb(即墨迹)中的城市空气质量信息
-# 墨迹天气中地名用的是`海淀区 `,`郑州市`,`塔里木地区`,而我们的地名是`海淀`,`郑州`,`塔里木`
-# 墨迹总共采集了2500个左右的城市, 其中能在我们的数据中找到对应的有2100多个
-
-
 
 
 def get_compare(all_cities,db):
@@ -101,8 +83,6 @@ def get_compare(all_cities,db):
     }
     )
     return remind_info
-
-
 
 
 if __name__ == '__main__':
