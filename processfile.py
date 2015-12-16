@@ -4,7 +4,7 @@ from util import get_days, get_files, connect
 
 host = '54.223.178.198'
 start_time = '15-11-01'
-end_time = '15-11-02'
+end_time = '15-11-30'
 gaps = range(1, 25)
 path = '/home/cy/tmp/pm/'
 
@@ -196,15 +196,13 @@ if __name__ == '__main__':
     #   清空旧的计算结果
     db = connect(host)
     c = db.compare_results
-   # c.delete_many({'key': 'compare_results'})
-
-    city_ids = db.compare_results.find_one({'key': 'station_id'})['data']
+    c.delete_many({'key': 'compare_results'})
+    city_ids=[ii['code'] for ii in db.stations.find()]
     t_24 = get_sample(all_data)#每晚八点预测的结果
-    #level_data = map2(all_data)#基于等级预测的结果
     for ii in city_ids:
         results = calculate(all_data, gaps, ii)#计算mae和mse
         results_24 = calculate2(t_24[0][ii], t_24[1][ii])#计算每晚八点预测的第二天的mae和mse
         results += results_24
         result_level = calculate_level(all_data, gaps, ii)#计算基于等级的mae和mse
         results.append( result_level)
-        #write2db(db, results, start_time, end_time, ii)
+        write2db(db, results, start_time, end_time, ii)
