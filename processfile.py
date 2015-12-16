@@ -1,27 +1,24 @@
 # coding:utf8
-import copy
 from math import sqrt
-import os
-import time
-import pymongo
+from util import get_days, get_files, connect
 
 host = '54.223.178.198'
-from util import get_days, get_files, connect
 start_time = '15-11-01'
-end_time = '15-11-30'
+end_time = '15-11-02'
 gaps = range(1, 25)
 path = '/home/cy/tmp/pm/'
-
 
 def map_line(x):
     """从文件的每一行读取有用信息"""
     res = x.split('  ')
     r0 = eval(res[0].split(' ')[-1])[1]
-    r = [eval(ii)[1] for ii in res[1:]]
+    # 不需要取全部240个小时只要 需要的即可
+    max_t=max(gaps)
+    max_t=max_t if max_t>28 else 28
+    r = [eval(ii)[1] for ii in res[1:max_t]]
     r.insert(0, r0)
 
     return [res[0].split(' ')[0], r]
-
 
 def check(all_lines):
     '''
@@ -31,7 +28,6 @@ def check(all_lines):
     '''
     if len(all_lines) != 1458: return False
     return all_lines[999].startswith('1475A ')
-
 
 def calculate(all_data, gaps=[1], city=0):
     '''
@@ -45,14 +41,20 @@ def calculate(all_data, gaps=[1], city=0):
         real_len = 0
         mae = mse = 0
         for ii in range(len(all_data) - gap):
-            if all_data[ii] == -1 or all_data[ii + gap] == -1:
+            if all_data[ii] == -1 or all_data[ii + gap] == -1\
+                    or all_data[ii].has_key(city)==False or all_data[ii + gap].has_key(city)==False:
                 continue
             real_len += 1
             mae += abs(all_data[ii][city][gap] - all_data[ii + gap][city][0])
             mse += (all_data[ii][city][gap] - all_data[ii + gap][city][0]) ** 2
-        results[0].append(float(mae) / real_len)
-        results[1].append(sqrt(float(mse) / real_len))
+        if real_len==0:
+            results[0].append(-1)
+            results[1].append(-1)
+        else:
+            results[0].append(float(mae) / real_len)
+            results[1].append(sqrt(float(mse) / real_len))
     return results
+
 def calculate_level(all_data, gaps=[1], city=0):
     '''
     统计等级差出现的次数
@@ -67,10 +69,16 @@ def calculate_level(all_data, gaps=[1], city=0):
         real_len = 0
         tmp={};dist=[]
         for ii in range(len(all_data) - gap):
-            if all_data[ii] == -1 or all_data[ii + gap] == -1:
+            if all_data[ii] == -1 or all_data[ii + gap] == -1\
+                    or all_data[ii].has_key(city)==False or all_data[ii + gap].has_key(city)==False:
                 continue
             real_len += 1
-            dist.append(abs(all_data[ii][city][gap] - all_data[ii + gap][city][0]))
+            dist.append(abs(all_data[ii][city][gap]/50 - all_data[ii + gap][city][0]/50))
+        if len(dist)==0:
+            tmp['-1']=1
+            results.append(tmp)
+            continue
+
         for ii in range(max(dist)+1):
             if dist.count(ii)>0:
                 tmp[str(ii)]=float(dist.count(ii))/(real_len)
@@ -88,6 +96,8 @@ def calculate2(x, y):
     mse = map(lambda x: (x[0] - x[1]) ** 2, f)
     mae = map(lambda x: abs(x[0] - x[1]), f)
     c = len(f)
+    if c==0:
+        return [-1,-1]
     mae = reduce(lambda a, b: a + b, mae)
     mse = reduce(lambda a, b: a + b, mse)
     return [float(mae) / c, sqrt(float(mse) / c)]
@@ -129,6 +139,7 @@ def get_sample(all_data):
 
 def map2(data):
     '''
+    @Deprec 已过期, 整合到calculate_level中 更省内存
     将aqi除以50+1得到等级
     :param data:
     :return:
@@ -172,7 +183,6 @@ def process_file(file):
 
 if __name__ == '__main__':
     all_data = []
-    city_num = 1458
     files = get_files(start_time, end_time)
     for file in files:
         try:
@@ -181,21 +191,20 @@ if __name__ == '__main__':
         except Exception as e:
             print e
             all_data.append(-1)
-
         finally:
             pass
     #   清空旧的计算结果
     db = connect(host)
     c = db.compare_results
-    c.delete_many({'key': 'compare_results'})
+   # c.delete_many({'key': 'compare_results'})
 
     city_ids = db.compare_results.find_one({'key': 'station_id'})['data']
     t_24 = get_sample(all_data)#每晚八点预测的结果
-    level_data = map2(all_data)#基于等级预测的结果
+    #level_data = map2(all_data)#基于等级预测的结果
     for ii in city_ids:
         results = calculate(all_data, gaps, ii)#计算mae和mse
         results_24 = calculate2(t_24[0][ii], t_24[1][ii])#计算每晚八点预测的第二天的mae和mse
         results += results_24
-        result_level = calculate_level(level_data, gaps, ii)#计算基于等级的mae和mse
+        result_level = calculate_level(all_data, gaps, ii)#计算基于等级的mae和mse
         results.append( result_level)
-        write2db(db, results, start_time, end_time, ii)
+        #write2db(db, results, start_time, end_time, ii)
