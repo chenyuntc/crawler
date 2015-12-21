@@ -4,9 +4,10 @@ from util import get_days, get_files, connect
 
 host = '54.223.178.198'
 start_time = '15-11-01'
-end_time = '15-11-30'
+end_time = '15-11-06'
 gaps = range(1, 25)
 path = '/home/cy/tmp/pm/'
+day_gaps=range(1,10)
 
 def map_line(x):
     """从文件的每一行读取有用信息"""
@@ -15,6 +16,7 @@ def map_line(x):
     # 不需要取全部240个小时只要 需要的即可
     max_t=max(gaps)
     max_t=max_t if max_t>28 else 28
+    max_t=240
     r = [eval(ii)[1] for ii in res[1:max_t]]
     r.insert(0, r0)
 
@@ -100,7 +102,9 @@ def calculate2(x, y):
         return [-1,-1]
     mae = reduce(lambda a, b: a + b, mae)
     mse = reduce(lambda a, b: a + b, mse)
+     
     return [float(mae) / c, sqrt(float(mse) / c)]
+
 
 
 def get_sample(all_data):
@@ -129,11 +133,13 @@ def get_sample(all_data):
     for time1 in all_data[20:-24:24]:
         if time1 == -1:
             for ii in city_ids:
-                t2[ii] += [-1 for i in range(24)]
+                t2[ii] += [-1 for i in range(24*9)]
+
         else:
             for city in time1:
                 if t1.has_key(city):
-                    t2[city] += time1[city][4:28]
+                    t2[city] += time1[city][4:-20]
+                else:t2[city] += [-1 for i in range(24*9)]
     return (t1, t2)
 
 
@@ -187,6 +193,7 @@ if __name__ == '__main__':
     for file in files:
         try:
             new_hour_info=process_file(file)
+            print 'process file %s ' %file
             all_data.append(new_hour_info)
         except Exception as e:
             print e
@@ -194,15 +201,23 @@ if __name__ == '__main__':
         finally:
             pass
     #   清空旧的计算结果
+    print 'process file done'
     db = connect(host)
     c = db.compare_results
     c.delete_many({'key': 'compare_results'})
     city_ids=[ii['code'] for ii in db.stations.find()]
     t_24 = get_sample(all_data)#每晚八点预测的结果
     for ii in city_ids:
+        print ii
         results = calculate(all_data, gaps, ii)#计算mae和mse
-        results_24 = calculate2(t_24[0][ii], t_24[1][ii])#计算每晚八点预测的第二天的mae和mse
-        results += results_24
+        tmp_r=[list(),list()]
+        for gap in day_gaps:
+            t8_gap=[]
+            for kk in range((gap-1)*24,len(t_24[1][ii]),24*9):t8_gap+=(t_24[1][ii][kk:kk+24])
+            results_24 = calculate2(t_24[0][ii][(gap-1)*24:], t8_gap)#计算每晚八点预测的第二天的mae和mse
+            tmp_r[0].append(results_24[0])
+            tmp_r[1].append(results_24[1])
+        results.append( tmp_r)
         result_level = calculate_level(all_data, gaps, ii)#计算基于等级的mae和mse
         results.append( result_level)
         write2db(db, results, start_time, end_time, ii)
