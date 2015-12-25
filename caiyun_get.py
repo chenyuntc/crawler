@@ -84,7 +84,7 @@ if __name__ == '__main__':
         try:
             data=get_data('%s,%s' %(ii[1],ii[2])  )
         except Exception as e:
-            print e
+            print e;continue
 
         with open(raw_dir+file_name,'a') as f:
             data=json.loads(data)
