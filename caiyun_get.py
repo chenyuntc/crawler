@@ -65,32 +65,42 @@ def get_city(db):
     return cities
 
 
-if __name__ == '__main__':
-    t=time.strftime('%Y%m%d')
-    file_name=time.strftime('%H.txt')
-    raw_dir,formatted_dir=path+t+'/raw/',path+t+'/formatted/'
+def main():
+    t = time.strftime('%Y%m%d')
+    file_name = time.strftime('%H.txt')
+    raw_dir, formatted_dir = path + t + '/raw/', path + t + '/formatted/'
     if not os.path.exists(raw_dir):
         os.makedirs(raw_dir)
         os.makedirs(formatted_dir)
-    db=connect(host,port)
+    db = connect(host, port)
     client = pymongo.MongoClient(host, port)
-    cities=get_city(client.mmdp)
-    stations=get_station()
-
-
+    cities = get_city(client.mmdp)
+    stations = get_station()
     for ii in stations:
-        print 'process city %s ' %ii[0]
-        station_id=ii[0]
+        print 'process city %s ' % ii[0]
+        station_id = ii[0]
         try:
-            data=get_data('%s,%s' %(ii[1],ii[2])  )
+            data = get_data('%s,%s' % (ii[1], ii[2]))
         except Exception as e:
-            print e;continue
+            print e;
+            continue
 
-        with open(raw_dir+file_name,'a') as f:
-            data=json.loads(data)
-            data=json.dumps(data)+'\r\n'
+        with open(raw_dir + file_name, 'a') as f:
+            data = json.loads(data)
+            data = json.dumps(data) + '\r\n'
             f.write(data)
-        formatted_data=format_data(data,station_id)
-        with open(formatted_dir+file_name,'a') as f:
-            f.write(formatted_data+'\r\n')
+        try:
+            formatted_data = format_data(data, station_id)
+        except Exception as e:
+            print e
+            continue
+        with open(formatted_dir + file_name, 'a') as f:
+            f.write(formatted_data + '\r\n')
+
+
+if __name__ == '__main__':
+    try:
+        main()
+    except:
+        print e
 
