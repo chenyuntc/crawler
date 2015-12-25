@@ -1,4 +1,8 @@
 #coding:utf8
+'''
+爬取彩云的数据并写文件,(格式化和源文件)
+每小时爬取
+'''
 import json
 import os
 from urllib2 import urlopen
@@ -18,7 +22,14 @@ def get_data(location):
     res = r.read()
     return res
 
-
+def get_station():
+    client=pymongo.MongoClient('54.223.178.198',27110)
+    db=client.test
+    c=db.stations
+    stations=[]
+    for ii in c.find():
+        stations.append((ii['code'],ii['longtitude'],ii['latitude']))
+    return stations
 
 def format_data(data,station_id):
     data=json.loads(data)
@@ -45,11 +56,6 @@ def format_data(data,station_id):
     return str(station_id)+'\t'+json.dumps(result)
 
 
-
-
-
-
-
 def get_city(db):
     c = db.city
     cities = []
@@ -69,12 +75,14 @@ if __name__ == '__main__':
     db=connect(host,port)
     client = pymongo.MongoClient(host, port)
     cities=get_city(client.mmdp)
+    stations=get_station()
 
-    for ii in cities:
-        print 'process city %s ' %ii['chName']
-        station_id=ii['id']
+
+    for ii in stations:
+        print 'process city %s ' %ii[0]
+        station_id=ii[0]
         try:
-            data=get_data('%s,%s' %(ii['lon'],ii['lat'])  )
+            data=get_data('%s,%s' %(ii[1],ii[2])  )
         except Exception as e:
             print e
 
