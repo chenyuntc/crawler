@@ -204,7 +204,7 @@ if __name__ == '__main__':
     print 'process file done'
     db = connect(host)
     c = db.compare_results
-    c.delete_many({'key': 'compare_results'})
+    #c.delete_many({'key': 'compare_results'})
     city_ids=[ii['code'] for ii in db.stations.find()]
     t_24 = get_sample(all_data)#每晚八点预测的结果
     for ii in city_ids:
