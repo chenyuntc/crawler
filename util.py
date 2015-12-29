@@ -64,13 +64,14 @@ def connect(host,port=27110):
 
 def get_files(start_time, end_time):
     '''
+    todo: 目前只能处理2015 年 的时间
     :param start_time: 起始时间 格式如'15-12-01'
     :param end_time: 终止时间 格式同上
     :return: 所有需要处理的文件 ['pm2_5201512100','pm2_5201512101','pm2_5201512102'.....]
     '''
     s_ = start_time.split('-')
-    start = int(time.strftime('%j', time.strptime(start_time, '%y-%m-%d')))
-    end = int(time.strftime('%j', time.strptime(end_time, '%y-%m-%d')))
+    start = int(time.strftime('%j', time.strptime(start_time, '%Y-%m-%d')))
+    end = int(time.strftime('%j', time.strptime(end_time, '%Y-%m-%d')))
     all_files = []
     for ii in range(start, end + 1):
         tmp_time = time.strptime('15-%s' % ii, '%y-%j')
