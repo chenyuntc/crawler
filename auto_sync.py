@@ -6,7 +6,7 @@ __author__ = 'cy'
 import time
 import os
 
-path ='/home/ubuntu/cy/moji/data'
+data_path ='/home/ubuntu/cy/moji/data'
 
 def get_filename():
     current_time = time.time()
@@ -24,9 +24,9 @@ def get_time():
 def sync():
     files = get_filename()
     for file in files:
-        if not os.path.exists(path+'/'+file.split('/')[0]):print 'os';os.mkdir(path+'/'+file.split('/')[0])
+        if not os.path.exists(data_path+'/'+file.split('/')[0]):print 'os';os.mkdir(data_path+'/'+file.split('/')[0])
         os.system('scp -r ubuntu@aqi-v2:~/data/jinlong.liu/AQI_new/aqi_pred/pm2_5/%s  %s/%s' \
-                  % (file, path   ,file.split('/')[0]      ))
+                  % (file, data_path   ,file.split('/')[0]      ))
 
 
 if __name__ == '__main__':
