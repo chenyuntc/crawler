@@ -101,7 +101,7 @@ def calculate2_back(x, y):
         else:
             avg[0].append(float(sum[0])/count)
             avg[1].append(float(sum[1])/count)
-    print avg
+    if len(avg[0])==0:return(-1,-1)
 
     mae=cal_mae(avg[0],avg[1])
     mse=cal_mse(avg[0],avg[1])
@@ -117,6 +117,6 @@ def cal_mae(x,y):
 def cal_mse(x,y):
     N=len(x)
     xy=zip(x,y)
-    x_minius_y=map(lambda  x:abs(x[0]-x[1]) ,xy)
+    x_minius_y=map(lambda  x:(x[0]-x[1])**2 ,xy)
     mse=sqrt(sum(x_minius_y)/N)
     return  mse
