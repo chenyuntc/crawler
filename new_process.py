@@ -99,11 +99,40 @@ def calculate_mae_mse(gap,data):
     
 def calculate_level(data,gap):
     '''
-
-    :param data:
-    :param gap:
-    :return:
+    :param data:数据 三维数组
+    :param gap: 间隔 int
+    :return: 二维数组 city_num*len(bins) 每个城市的每个等级差所占的比例
+    每一行的元素[0.2,0.6,0.4,0,0]  第一个元素是缺失的数据比例, 第二个元素是预测准确的比例, 第三个是预测等级差为1的比例
     '''
+
+    true_level_data=np.floor(data[gap:,:,0]/50)
+    predict_level_data=np.floor(data[:-gap,:,gap]/50)
+    # -1 代表着缺失的数据,
+    valid_true_index=true_level_data>0
+    valid_predict_index=predict_level_data>0
+    #计算预测和实测皆不为空的index
+    valid_data_index=valid_predict_index*valid_true_index
+
+    result=(1+np.abs(predict_level_data-true_level_data))*(valid_data_index)
+    bins=eval(cf.get('calculate','bins'))
+
+    level_result=np.zeros([true_level_data.shape[1],len(bins)])
+
+    level_dist=map(lambda x: np.array(np.histogram(x,bins=bins)[0],\
+                                      dtype=float)/sum(np.histogram(x,bins=bins)[0][1:]),result.T)
+
+    return np.array(level_dist)
+
+
+
+
+
+
+
+
+
+
+
 
 
 
