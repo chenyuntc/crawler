@@ -141,7 +141,7 @@ if __name__ == '__main__':
         results = calculate(all_data, gaps, ii)#计算mae和mse
         tmp_r=[list(),list()]
         for gap in day_gaps:
-            t8_gap=[]
+            t8_gap=[]#预测数据
             for kk in range((gap-1)*24,len(t_24[1][ii]),24*9):t8_gap+=(t_24[1][ii][kk:kk+24])
             results_24 = calculate2_back(t_24[0][ii][(gap-1)*24:], t8_gap)#计算每晚八点预测的第二天的mae和mse
             tmp_r[0].append(results_24[0])

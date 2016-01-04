@@ -9,8 +9,6 @@ city_num=int(cf.get('calculate','city_num'))
 predict_hour=int(cf.get('calculate','city_num'))
 
 
-
-
 file_path=cf.get('file','filepath')
 start_time=cf.get('file','start_time')
 end_time=cf.get('file','end_time')
