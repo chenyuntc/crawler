@@ -120,11 +120,15 @@ def calculate_level(data,gap):
 
     level_dist=map(lambda x: np.array(np.histogram(x,bins=bins)[0],\
                                       dtype=float)/sum(np.histogram(x,bins=bins)[0][1:]),result.T)
-
     return np.array(level_dist)
 
 
-
+def cal_day_mae_mse(data,gap):
+    true_data=data[gap*24:,:,0]
+    predict_data=data[20:-gap*24:24,:,4+(gap-1)*24:4+(gap)*24]
+    # 多维矩阵的转置 之前predict_data shape是(4,1711,24) 装置成和true_data一样的现状
+    predict_data=np.transpose(predict_data,(1,0,2))
+    predict_data=predict_data.reshape([predict_data.shape[0],-1])
 
 
 
