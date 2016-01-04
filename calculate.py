@@ -79,3 +79,44 @@ def calculate2(x, y):
     mse = reduce(lambda a, b: a + b, mse)
 
     return [float(mae) / c, sqrt(float(mse) / c)]
+
+
+
+def calculate2_back(x, y):
+    '''
+    计算两个组数据的mae和mse,数据中缺失值用-1 表示
+    :param x: 第一组数据
+    :param y: 第二组
+    :return:(mae,mse)
+    '''
+    avg=[[],[]]
+    for ii in range(0,len(x),24):
+        sum,count=[0,0],0
+        for xx,yy in zip(x[ii:ii+24],y[ii:ii+24]):
+            if xx==-1 or yy==-1:continue
+            sum[0]+=xx
+            sum[1]+=yy
+            count+=1
+        if count==0:pass
+        else:
+            avg[0].append(float(sum[0])/count)
+            avg[1].append(float(sum[1])/count)
+    print avg
+
+    mae=cal_mae(avg[0],avg[1])
+    mse=cal_mse(avg[0],avg[1])
+    return (mae,mse)
+
+
+def cal_mae(x,y):
+    N=len(x)
+    xy=zip(x,y)
+    x_minius_y=map(lambda  x:abs(x[0]-x[1]) ,xy)
+    mse=(sum(x_minius_y)/N)
+    return  mse
+def cal_mse(x,y):
+    N=len(x)
+    xy=zip(x,y)
+    x_minius_y=map(lambda  x:abs(x[0]-x[1]) ,xy)
+    mse=sqrt(sum(x_minius_y)/N)
+    return  mse

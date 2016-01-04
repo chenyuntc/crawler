@@ -1,7 +1,8 @@
 # coding:utf8
-from calculate import calculate, calculate_level, calculate2
+from calculate import calculate, calculate_level, calculate2,calculate2_back
 from util import get_files, connect
 from auto_sync import sync,get_time
+
 
 host = '54.223.178.198'
 #start_time = '15-11-01'
@@ -142,7 +143,7 @@ if __name__ == '__main__':
         for gap in day_gaps:
             t8_gap=[]
             for kk in range((gap-1)*24,len(t_24[1][ii]),24*9):t8_gap+=(t_24[1][ii][kk:kk+24])
-            results_24 = calculate2(t_24[0][ii][(gap-1)*24:], t8_gap)#计算每晚八点预测的第二天的mae和mse
+            results_24 = calculate2_back(t_24[0][ii][(gap-1)*24:], t8_gap)#计算每晚八点预测的第二天的mae和mse
             tmp_r[0].append(results_24[0])
             tmp_r[1].append(results_24[1])
         results.append( tmp_r)
