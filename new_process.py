@@ -1,6 +1,4 @@
 # coding:utf8
-from get_config import cf, city_num, predict_hour, file_path, start_time, end_time, gaps, all_files, day_gaps, db, bins
-
 __author__ = 'cy'
 import numpy as np
 from util import get_files
@@ -95,6 +93,24 @@ def calculate_mae_mse(data, gap):
     return (sum_mae, sum_mse)
 
 
+def test_mae_mse(true_data, predict_data):
+    valid_true_index = true_data != -1
+    valid_predict_index = predict_data != -1
+    # 计算预测和实测皆不为空的index
+    valid_data_index = valid_predict_index * valid_true_index
+
+    # 计算mae
+    valid_data = (np.abs(predict_data - true_data)) * valid_data_index
+    sum_mae = np.sum(valid_data, axis=0) / np.sum(valid_data_index, axis=0)
+    # 计算mse
+    valid_data = ((predict_data - true_data) ** 2) * valid_data_index
+    sum_mse = np.sqrt(np.sum(valid_data, axis=0) / np.sum(valid_data_index, axis=0))
+
+    return np.zeros([city_num, 1]) - 1, np.zeros([city_num, 1]) - 1
+
+    return (sum_mae, sum_mse)
+
+
 def calculate_level(data, gap):
     '''
     :param data:数据 三维数组
@@ -132,10 +148,10 @@ def calculate_mean_by_day(data):
     :param data: array city_num*hour_num
     :return:
     '''
-    data_by_day = (data.reshape([data.shape[0], 24, -1]))
+    data_by_day = (data.reshape([data.shape[0], -1, 24]))
     valid_data_index_by_day = data_by_day != -1
-    sum_data_by_day = np.sum(data_by_day * valid_data_index_by_day, axis=1)
-    valid_hour_num_by_day = np.sum(valid_data_index_by_day, axis=1)
+    sum_data_by_day = np.sum(data_by_day * valid_data_index_by_day, axis=2)
+    valid_hour_num_by_day = np.sum(valid_data_index_by_day, axis=2)
     data_by_day = sum_data_by_day / valid_hour_num_by_day
     return data_by_day
 
@@ -144,17 +160,32 @@ def calculate_day_mae_mse(data, gap):
     try:
         true_data = (data[gap * 24:, :, 0]).T
         predict_data = data[20:-gap * 24:24, :, 4 + (gap - 1) * 24:4 + (gap) * 24]
-        # 多维矩阵的转置 之前predict_data shape是(4,1711,24) 装置成和true_data一样的现状
+        # 多维矩阵的转置 之前predict_data shape是(4,1711,24) 装置成和true_data一样的形状
+        # (1711,96)
         predict_data = np.transpose(predict_data, (1, 0, 2))
         predict_data = predict_data.reshape([predict_data.shape[0], -1])
 
         # 计算逐日的平均值,需注意剔除无效数据
+
         predict_by_day = calculate_mean_by_day(predict_data)
         true_by_day = calculate_mean_by_day(true_data)
         ##### TODO: 是否需要再判断里面有缺失的数据
-        mae = np.mean(np.abs(predict_by_day - true_by_day), axis=1)
-        mse = np.sqrt(np.mean((predict_by_day - true_by_day) ** 2, axis=1))
+        predict_by_day = np.nan_to_num(predict_by_day)
+        true_by_day = np.nan_to_num(true_by_day)
+
+        valid_true_index = true_by_day != 0
+        valid_predict_index = predict_by_day != 0
+        # 计算预测和实测皆不为空的index
+        valid_data_index = valid_predict_index * valid_true_index
+        predict_by_day=predict_by_day*valid_data_index
+        true_by_day=true_by_day*valid_data_index
+
+        mae = np.sum(np.abs(predict_by_day - true_by_day), axis=1) / np.sum(valid_data_index, axis=1)
+        mse = np.sqrt(np.sum((predict_by_day - true_by_day) ** 2, axis=1) \
+                      / np.sum(valid_data_index, axis=1))
+        print
     except  Exception as e:
+        print '---------------error-------------'
         print e
         mse = mae = np.zeros([city_num, 1]) - 1
 
@@ -187,22 +218,23 @@ def insert_to_mongo(db, results):
     '''
     all_data = [{
                     'key': 'calculate_results',
-        'cityID':str(city+1001)+'A',
+                    'cityID': str(city + 1001) + 'A',
                     'start_time': start_time,
                     'end_time': end_time,
                     'info': '储存从start_time 到end_time的计算结果',
                     'data': {
                         'mae': list(result[:len(gaps)]),
                         'mse': list(result[len(gaps):2 * len(gaps)]),
-                        'levels': map(lambda  x:list(x),list(result[2 * len(gaps):2 * len(gaps) + \
-                                                            (len(bins)-1) * len(gaps)].reshape([len(gaps),-1]))),
-                        'day_mae': list(result[2 * len(gaps) + (len(bins)-1) * len(gaps): \
-                          2 * len(gaps) + (len(bins)-1) * len(gaps) + len(day_gaps)]),
+                        'levels': map(lambda x: list(x), list(result[2 * len(gaps):2 * len(gaps) + \
+                        (len(bins) - 1) * len(gaps)].reshape(
+                            [len(gaps), -1]))),
+                        'day_mae': list(result[2 * len(gaps) + (len(bins) - 1) * len(gaps): \
+                            2 * len(gaps) + (len(bins) - 1) * len(gaps) + len(day_gaps)]),
                         'day_mse': list(result[-len(day_gaps):])
 
                     }
 
-                } for (result,city) in zip(results,xrange(city_num))
+                } for (result, city) in zip(results, xrange(city_num))
                 ]
     col = db.get_collection(collection_name)
 
@@ -210,8 +242,10 @@ def insert_to_mongo(db, results):
 
 
 if __name__ == '__main__':
-    data = process_all()
+    # data = process_all()
     # 使用偏函数 固定data,便于之后map操作
+    data = np.load('2015_12_30.npz')['arr_0']
+
     cal_mae_mse = partial(calculate_mae_mse, data)
     cal_level = partial(calculate_level, data)
     cal_day_mae_mse = partial(calculate_day_mae_mse, data)
