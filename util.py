@@ -70,7 +70,7 @@ def get_files(start_time, end_time):
     :return: 所有需要处理的文件 ['pm2_5201512100','pm2_5201512101','pm2_5201512102'.....]
     '''
     start_time=time.mktime(time.strptime(start_time,'%Y-%m-%d'))
-    end_time=time.mktime(time.strptime(end_time,'%Y-%m-%d'))
+    end_time=time.mktime(time.strptime(end_time,'%Y-%m-%d'))+1
     all_files = []
     for every_day in xrange(int(start_time),int(end_time),86400):
         tmp_time=time.strptime(time.ctime(every_day))
