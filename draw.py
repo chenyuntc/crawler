@@ -1,4 +1,4 @@
-# coding:utf8
+#coding:utf8
 #capital_num, day_num = 31, 7
 import pymongo
 #from util import connect
@@ -14,6 +14,9 @@ day_num=cf.getint('draw','day_num')
 station_num = cf.getint('draw','station_num')
 hour_num =  (cf.getint('draw','hour_num'))
 end_time=cf.get('draw','end_time')
+csv_by_hour=np.zeros([hour_num,5])
+csv_by_city=np.zeros([capital_num,2*day_num])
+
 
 def get_data():
     all_data2 = {}
@@ -44,7 +47,6 @@ capitals ,zone,capital_data,all_data2=get_data()
 x_ticks = [ii[0] for ii in capitals['data']]
 summary_data = np.zeros([24, 10])
 
-
 def calculate_avg_by_file():
     '''
     计算全国所有站点的mae和mse均值
@@ -58,111 +60,115 @@ def calculate_avg_by_file():
     m2=m*(index)
     ms=np.sum(m2,axis=0)/np.sum(index,axis=0)
 
-    x=range(hour_num)
+    x=range(1,1+hour_num)
+
+    csv_by_hour[:,0]=ms[:hour_num]
+    csv_by_hour[:,1]=ms[-hour_num:]
+
     plt.plot(np.array(x),ms[:hour_num],label='MAE',linewidth='2.0')
     plt.plot(x,ms[-hour_num:],label='MSE',linewidth='2.0')
     xx=range(1, 25)
     plt.xticks(xx)
-    plt.title(u"所有站点 AQI数值MSE")
+    plt.title(u"所有站点 AQI数值")
     plt.xlabel(u"小时")
     plt.grid(True)
     plt.xticks(xx)
     plt.legend(loc='best')
-    plt.show()
-def calculate_city_by_file():
-
-    pass
-def draw_avg():
-    '''
-    计算1500个站点所有的mae和mse
-    :return:
-    '''
-
-
-
-    a = np.ones([station_num, hour_num])
-    jj = 0
-    for ii in all_data2.values():
-        a[jj] = ii['data'][0]
-        jj += 1
-    a = np.array(filter(lambda x: (x[0] + 1) * x[0] != 0, a))
-    avg = a.mean(axis=0)
-    print avg
-    summary_data[:, 0] = avg
-    x = range(1, 25)
-    plt.plot(x, avg, label='MAE')
-    plt.title(u"所有站点 AQI数值MAE和mse")
-    plt.xlabel(u"小时")
+    plt.savefig(u'所有站点数据平均.png')
     plt.grid(True)
-    a = np.ones([station_num, hour_num])
-    jj = 0
-    for ii in all_data2.values():
-        a[jj] = ii['data'][1]
-        jj += 1
-    a = a[a != -1].reshape([-1, 24])
-    avg = a.mean(axis=0)
-    summary_data[:, 1] = avg
-    plt.plot(x, avg, label='MSE',linewidth='2.0')
-    print avg
-    xx = range(1, 25)
-    plt.xticks(xx)
-
-    plt.title(u"所有站点 AQI数值MSE")
-    plt.xlabel(u"小时")
-    plt.grid(True)
-    plt.xticks(xx)
-    plt.legend(loc='best')
     plt.show()
+
 
 
 def draw_level_avg():
-    level_data = np.zeros([station_num, hour_num]) - 2
+    '''
+    画所有城市的等级差的平均值
+    :return:
+    '''
+    level_data = np.zeros([1711, hour_num]) - 2
     jj = 0
     for ii in all_data2.values():
         kk = 0
-        for iii in ii['data'][3]:
-            # if ii['data'][3][kk].get('0'): level_data[jj][kk]=-1;kk+=1;continue
-            level_data[jj][kk] = ii['data'][3][kk].get('0', 0)
+        for iii in ii['data']['levels']:
+            level_data[jj][kk] = ii['data']['levels'][kk][1]
             kk += 1
         jj += 1
+    index=level_data != -2
+    level_data = level_data*index
+    #level_data=level_data[level_data != np.inf].reshape([-1, 24])
+    index1=level_data!=np.inf
+    index=index1*index
+    level_data=np.nan_to_num(level_data)
+    level_data2=level_data*index
 
-    level_data = level_data[level_data != -2].reshape([-1, 24])
-    avg_level = level_data.mean(axis=0)
+    avg_level =(level_data2).sum(axis=0)/np.sum(index,axis=0)
     x = range(1, 25)
-    plt.plot(x, avg_level)
+    plt.plot(x, avg_level,label=u"预测准确",linewidth='2.0')
+    csv_by_hour[:,2] = avg_level
+    summary_data[:, 2] = avg_level
+    tmp_level=avg_level
+
+    level_data = np.zeros([1711, hour_num]) - 2
+    jj = 0
+    for ii in all_data2.values():
+        kk = 0
+        for iii in ii['data']['levels']:
+            level_data[jj][kk] = ii['data']['levels'][kk][1]+ii['data']['levels'][kk][2]
+            kk += 1
+        jj += 1
+    index=level_data != -2
+    level_data = level_data*index
+    #level_data=level_data[level_data != np.inf].reshape([-1, 24])
+    index1=level_data!=np.inf
+    index=index1*index
+    level_data=np.nan_to_num(level_data)
+    level_data2=level_data*index
+
+    avg_level =(level_data2).sum(axis=0)/np.sum(index,axis=0)
+    x = range(1, 25)
+    plt.plot(x, avg_level,label=u"等级差为1以内",linewidth='2.0')
+    csv_by_hour[:,3] = avg_level
+    csv_by_hour[:,4]=avg_level-tmp_level
+    plt.title(u'AQI等级差占比(%)')
+    plt.xlabel(u'小时')
+    xx = range(1, 25)
+    plt.xticks(xx)
+    plt.legend(loc='best')
+    plt.grid(True)
+    plt.savefig(u'所有站点等级差平均.png')
+    plt.show()
+
+def draw_level_avg2():
+    level_data = np.zeros([1711, hour_num]) - 2
+    jj = 0
+    for ii in all_data2.values():
+        kk = 0
+        for iii in ii['data']['levels']:
+            # if ii['data'][3][kk].get('0'): level_data[jj][kk]=-1;kk+=1;continue
+            level_data[jj][kk] = ii['data']['levels'][kk][1]+ii['data']['levels'][kk][2]
+            kk += 1
+        jj += 1
+    index=level_data != -2
+
+    level_data = level_data*index
+
+    #level_data=level_data[level_data != np.inf].reshape([-1, 24])
+    index1=level_data!=np.inf
+    index=index1*index
+    level_data=np.nan_to_num(level_data)
+    level_data2=level_data*index
+
+    avg_level =(level_data2).sum(axis=0)/np.sum(index,axis=0)
+    x = range(1, 25)
+    plt.plot(x, avg_level,label=u"预测准确",linewidth='2.0')
     print avg_level
     summary_data[:, 2] = avg_level
-    plt.title(u'AQI等级差为0(%)')
+    plt.title(u'AQI等级差占比(%)')
     plt.xlabel(u'小时')
     xx = range(1, 25)
     plt.xticks(xx)
     plt.grid(True)
     plt.show()
-
-
-def draw_level_avg_2():
-    level_data = np.zeros([station_num, hour_num]) - 2
-    jj = 0
-    for ii in all_data2.values():
-        kk = 0
-        for iii in ii['data'][3]:
-            # if ii['data'][3][kk].get('0'): level_data[jj][kk]=-1;kk+=1;continue
-            level_data[jj][kk] = ii['data'][3][kk].get('0', 0) + ii['data'][3][kk].get('1', 0)
-            kk += 1
-        jj += 1
-    level_data = level_data[level_data != -2].reshape([-1, 24])
-    avg_level = level_data.mean(axis=0)
-    x = range(1, 25)
-    plt.plot(x, avg_level)
-    print avg_level
-    summary_data[:, 9] = avg_level
-    plt.title(u'AQI等级差为0,1(%)')
-    plt.xlabel(u'小时')
-    plt.grid(True)
-    xx = range(1, 25)
-    plt.xticks(xx)
-    plt.show()
-
 def draw_city_mse():
     '''
     话所有城市的mae 柱状图 总共话7张或者9张 ,每张包含31个城市的mae
@@ -236,17 +242,13 @@ def generate_csv():
         # city_mae[jj]=capital_data[ii]['data'][2][0][:day_num]
         city_data[ii] = capital_data[ii]['data']
         jj += 1
-    tmp = np.zeros([31, 18])
+    tmp = np.zeros([31, 10])
     jj = 0
     for ii in city_data:
         print(ii)
-        tmp[jj] = city_data[ii][2][0] + city_data[ii][2][1]
+        tmp[jj] = city_data[ii]['day_mae']  +city_data[ii]['day_mse']
         jj += 1
     for ii in range(capital_num):
         pass
     return tmp
 
-    # plt.plot(range(1,day_num+1),city_mae[ii,:],label=x_ticks[ii])
-    # if (ii!=0 and  ii%5==0) or ii==capital_num-1:
-    #  plt.legend(loc='best')
-    # plt.show()
