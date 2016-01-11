@@ -242,9 +242,9 @@ def insert_to_mongo(db, results):
 
 
 if __name__ == '__main__':
-    # data = process_all()
+    data = process_all()
     # 使用偏函数 固定data,便于之后map操作
-    data = np.load('2015_12_30.npz')['arr_0']
+    #data = np.load('2015_12_30.npz')['arr_0']
 
     cal_mae_mse = partial(calculate_mae_mse, data)
     cal_level = partial(calculate_level, data)
