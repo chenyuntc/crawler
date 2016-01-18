@@ -225,11 +225,12 @@ end_time=2015-11-06
     '''
     time_start = datetime.datetime.strptime(str_start+'00',"%Y-%m-%d%H")
     stamp_start = math.floor(time.mktime(time_start.timetuple()))
-    time_now = datetime.datetime.strptime(str_now+00,"%Y-%m-%d%H")
+    time_now = datetime.datetime.strptime(str_now+'00',"%Y-%m-%d%H")
     stamp_now = math.floor(time.mktime(time_now.timetuple()))
-    aqi_data_tmp = collection.find({
+    aqi_data_tmp = collection.find({'station_code':{'$lte':'2710A'},
                                     "timestamp":{"$gte":math.floor(stamp_start),'$lte':math.floor(stamp_now)},\
                                     "aqi":{"$gt":0}},\
+
                                    {"timestamp":"true","aqi":"true","time_point":"true","_id":0,'station_code':'true'})\
         .hint([("station_code", pymongo.ASCENDING),('timestamp', pymongo.ASCENDING)])
     return aqi_data_tmp
@@ -271,13 +272,12 @@ def wrap(data,mongo_data):
         real_time=ii['time_point'].split(':')[0]
         now_time=time.strftime('%Y-%m-%d %H', time.strptime(real_time,'%Y-%m-%dT%H'))
         index=get_hour_index(start_time+' 00',now_time)
-        print ii
         data[index][int(ii['station_code'][:-1])-1001][0]=ii['aqi']
 
 if __name__ == '__main__':
     data = process_all()
     coll=Connect_DB()
-    mongo_data=ReadOneStation(coll,start_time)
+    mongo_data=ReadOneStation(coll,start_time,end_time)
     wrap(data,mongo_data)
     # 使用偏函数 固定data,便于之后map操作
     #data = np.load('2015_12_30.npz')['arr_0']
