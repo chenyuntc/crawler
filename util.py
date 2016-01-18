@@ -31,9 +31,25 @@ def station_csv2db(file):
     collection.insert_many(data)
 '''
 
+def Connect_DB():
+    # 连接mongodb数据库
+    entry = 'mongodb://54.223.178.198:27110/'
+    Client = pymongo.MongoClient(entry)
+    db = Client.pm25_data
+    collection = db.pm25in
 
+    return collection
 from qiniu import Auth, put_file
-
+def get_hour_index(start,end):
+    '''
+    计算两个时间之间差多少天
+    :param start: '2016-12-09 12'
+    :param end: 格式同上
+    :return:Int
+    '''
+    start_time = time.mktime(time.strptime(start, '%Y-%m-%d %H'))
+    end_time = time.mktime(time.strptime(end, '%Y-%m-%d %H'))
+    return (end_time - start_time) / 3600
 
 def qiniu_upload(data,key,mimeType):
     '''

@@ -1,9 +1,13 @@
 # coding:utf8
 __author__ = 'cy'
 import numpy as np
-from util import get_files
+from util import get_files,get_hour_index,Connect_DB
 from functools import partial
 from get_config import *
+import datetime
+import math
+import pymongo
+import time
 
 
 def map_line(x):
@@ -160,7 +164,7 @@ def calculate_mean_by_day(data):
 def calculate_day_mae_mse(data, gap):
     try:
         true_data = (data[gap * 24:, :, 0]).T
-        predict_data = data[20:-gap * 24:24, :, 4 + (gap - 1) * 24:4 + (gap) * 24]
+        predict_data = data[21:-gap * 24:24, :, 3 + (gap - 1) * 24:3 + (gap) * 24]
         # 多维矩阵的转置 之前predict_data shape是(4,1711,24) 装置成和true_data一样的形状
         # (1711,96)
         predict_data = np.transpose(predict_data, (1, 0, 2))
@@ -209,6 +213,26 @@ def h_stack_data(mae_mse_by_hours, level_by_hours, day_mae_mse):
     results = np.hstack((maes, mses, level_datas, day_maes, day_mses))
     return results
 
+def ReadOneStation(collection ,str_start,str_now):
+    '''
+    start_time=2015-11-01
+#计算的终止时间
+end_time=2015-11-06
+    :param collection:
+    :param str_start:
+    :param str_now:
+    :return:
+    '''
+    time_start = datetime.datetime.strptime(str_start+'00',"%Y-%m-%d%H")
+    stamp_start = math.floor(time.mktime(time_start.timetuple()))
+    time_now = datetime.datetime.strptime(str_now+00,"%Y-%m-%d%H")
+    stamp_now = math.floor(time.mktime(time_now.timetuple()))
+    aqi_data_tmp = collection.find({
+                                    "timestamp":{"$gte":math.floor(stamp_start),'$lte':math.floor(stamp_now)},\
+                                    "aqi":{"$gt":0}},\
+                                   {"timestamp":"true","aqi":"true","time_point":"true","_id":0,'station_code':'true'})\
+        .hint([("station_code", pymongo.ASCENDING),('timestamp', pymongo.ASCENDING)])
+    return aqi_data_tmp
 
 def insert_to_mongo(db, results):
     '''
@@ -242,8 +266,19 @@ def insert_to_mongo(db, results):
     col.insert_many(all_data)
 
 
+def wrap(data,mongo_data):
+    for ii in mongo_data:
+        real_time=ii['time_point'].split(':')[0]
+        now_time=time.strftime('%Y-%m-%d %H', time.strptime(real_time,'%Y-%m-%dT%H'))
+        index=get_hour_index(start_time+' 00',now_time)
+        print ii
+        data[index][int(ii['station_code'][:-1])-1001][0]=ii['aqi']
+
 if __name__ == '__main__':
     data = process_all()
+    coll=Connect_DB()
+    mongo_data=ReadOneStation(coll,start_time)
+    wrap(data,mongo_data)
     # 使用偏函数 固定data,便于之后map操作
     #data = np.load('2015_12_30.npz')['arr_0']
 
