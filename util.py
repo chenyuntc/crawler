@@ -31,9 +31,25 @@ def station_csv2db(file):
     collection.insert_many(data)
 '''
 
+def Connect_DB():
+    # 连接mongodb数据库
+    entry = 'mongodb://54.223.178.198:27110/'
+    Client = pymongo.MongoClient(entry)
+    db = Client.pm25_data
+    collection = db.pm25in
 
+    return collection
 from qiniu import Auth, put_file
-
+def get_hour_index(start,end):
+    '''
+    计算两个时间之间差多少天
+    :param start: '2016-12-09 12'
+    :param end: 格式同上
+    :return:Int
+    '''
+    start_time = time.mktime(time.strptime(start, '%Y-%m-%d %H'))
+    end_time = time.mktime(time.strptime(end, '%Y-%m-%d %H'))
+    return (end_time - start_time) / 3600
 
 def qiniu_upload(data,key,mimeType):
     '''
@@ -76,7 +92,7 @@ def get_files(start_time, end_time):
         tmp_time=time.strptime(time.ctime(every_day))
         tmp_day=time.strftime('%Y%m/%d/',tmp_time)
         tmp_day2 = time.strftime('pm2_5%Y%m%d', tmp_time)
-        tmp_day3=time.strftime('%Y%m%d%H', tmp_time)
+        tmp_day3=time.strftime('%Y%m%d', tmp_time)
         h_24 = ['0' + str(ii) for ii in range(10)] + [str(ii) for ii in range(10, 24)]
         #b = [tmp_day + tmp_day2 + (ii) for ii in h_24]
         b=[tmp_day3+(ii)+'.sent' for ii in h_24]
