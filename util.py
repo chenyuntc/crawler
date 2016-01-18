@@ -76,10 +76,10 @@ def get_files(start_time, end_time):
         tmp_time=time.strptime(time.ctime(every_day))
         tmp_day=time.strftime('%Y%m/%d/',tmp_time)
         tmp_day2 = time.strftime('pm2_5%Y%m%d', tmp_time)
-        tmp_day3=time.strftime('%Y%m%d%H.sent', tmp_time)
+        tmp_day3=time.strftime('%Y%m%d%H', tmp_time)
         h_24 = ['0' + str(ii) for ii in range(10)] + [str(ii) for ii in range(10, 24)]
         #b = [tmp_day + tmp_day2 + (ii) for ii in h_24]
-        b=[tmp_day3+(ii) for ii in h_24]
+        b=[tmp_day3+(ii)+'.sent' for ii in h_24]
         all_files += b
     return all_files;
 
