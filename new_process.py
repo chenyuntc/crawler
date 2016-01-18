@@ -56,6 +56,7 @@ def process_all():
         try:
             new_hour_info = process_file(file)
         except Exception as e:
+            jj += 1
             print(e)
             continue
 
