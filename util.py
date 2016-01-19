@@ -1,5 +1,8 @@
 #coding:utf8
+import datetime
+import math
 import time
+from get_config import start_time, end_time, gaps, bins, day_gaps, city_num, collection_name
 
 __author__ = 'cy'
 import pymongo
@@ -100,3 +103,64 @@ def get_files(start_time, end_time):
     return all_files;
 
 
+def ReadOneStation(collection ,str_start,str_now):
+    '''
+    start_time=2015-11-01
+#计算的终止时间
+end_time=2015-11-06
+    :param collection:
+    :param str_start:
+    :param str_now:
+    :return:
+    '''
+    time_start = datetime.datetime.strptime(str_start+'00',"%Y-%m-%d%H")
+    stamp_start = math.floor(time.mktime(time_start.timetuple()))
+    time_now = datetime.datetime.strptime(str_now+'00',"%Y-%m-%d%H")
+    stamp_now = math.floor(time.mktime(time_now.timetuple()))
+    aqi_data_tmp = collection.find({'station_code':{'$lte':'2710A'},
+                                    "timestamp":{"$gte":math.floor(stamp_start),'$lte':math.floor(stamp_now)},\
+                                    "aqi":{"$gt":0}},\
+
+                                   {"timestamp":"true","aqi":"true","time_point":"true","_id":0,'station_code':'true'})\
+        .hint([("station_code", pymongo.ASCENDING),('timestamp', pymongo.ASCENDING)])
+    return aqi_data_tmp
+
+
+def insert_to_mongo(db, results):
+    '''
+    重新整合数据, 插入到mongodb中
+    :param db:
+    :param results:
+    :return:
+    '''
+    all_data = [{
+                    'key': 'calculate_results',
+                    'cityID': str(city + 1001) + 'A',
+                    'start_time': start_time,
+                    'end_time': end_time,
+                    'info': '储存从start_time 到end_time的计算结果',
+                    'data': {
+                        'mae': list(result[:len(gaps)]),
+                        'mse': list(result[len(gaps):2 * len(gaps)]),
+                        'levels': map(lambda x: list(x), list(result[2 * len(gaps):2 * len(gaps) + \
+                        (len(bins) - 1) * len(gaps)].reshape(
+                            [len(gaps), -1]))),
+                        'day_mae': list(result[2 * len(gaps) + (len(bins) - 1) * len(gaps): \
+                            2 * len(gaps) + (len(bins) - 1) * len(gaps) + len(day_gaps)]),
+                        'day_mse': list(result[-len(day_gaps):])
+
+                    }
+
+                } for (result, city) in zip(results, xrange(city_num))
+                ]
+    col = db.get_collection(collection_name)
+
+    col.insert_many(all_data)
+
+
+def wrap(data,mongo_data):
+    for ii in mongo_data:
+        real_time=ii['time_point'].split(':')[0]
+        now_time=time.strftime('%Y-%m-%d %H', time.strptime(real_time,'%Y-%m-%dT%H'))
+        index=get_hour_index(start_time+' 00',now_time)
+        data[index][int(ii['station_code'][:-1])-1001][0]=ii['aqi']

@@ -1,122 +1,113 @@
 #coding:utf8
-from math import sqrt
+import numpy as np
+from get_config import city_num, cf
 
-__author__ = 'cy'
 
-
-def calculate(all_data, gaps=[1], city=0):
+def calculate_mae_mse(data, gap):
     '''
-   :param all_data: 所有的数据, 每一行代表着一个时间的数据,
-   :param gaps: 所有要处理的间隔
-   :param city: 监测站编号
-   :return: 所有间隔(矩阵 2*len(gaps))
-     '''
-    results = [list(), list()]
-    for gap in gaps:
-        real_len = 0
-        mae = mse = 0
-        for ii in range(len(all_data) - gap):
-            if all_data[ii] == -1 or all_data[ii + gap] == -1\
-                    or all_data[ii].has_key(city)==False or all_data[ii + gap].has_key(city)==False:
-                continue
-            real_len += 1
-            mae += abs(all_data[ii][city][gap] - all_data[ii + gap][city][0])
-            mse += (all_data[ii][city][gap] - all_data[ii + gap][city][0]) ** 2
-        if real_len==0:
-            results[0].append(-1)
-            results[1].append(-1)
-        else:
-            results[0].append(float(mae) / real_len)
-            results[1].append(sqrt(float(mse) / real_len))
-    return results
-
-
-def calculate_level(all_data, gaps=[1], city=0):
+    计算mae和mse 逐小时的
+    :param gap: int 间隔
+    :param data: 数据 三维数组
+    :return: mae和mse 二者都是 一维数组, 数组的长度等于city_num
     '''
-    统计等级差出现的次数
-   :param all_data: 所有的数据, 每一行代表着一个时间的数据,
-   :param gaps: 所有要处理的间隔
-   :param city: 监测站编号
-   :return: 所有间隔(矩阵 2*len(gaps))
-     '''
+    try:
+        true_data = data[gap:, :, 0]
+        predict_data = data[:-gap, :, gap]
+        # -1 代表着缺失的数据,
+        valid_true_index = true_data != -1
+        valid_predict_index = predict_data != -1
+        # 计算预测和实测皆不为空的index
+        valid_data_index = valid_predict_index * valid_true_index
 
-    results=[]
-    for gap in gaps:
-        real_len = 0
-        tmp={};dist=[]
-        for ii in range(len(all_data) - gap):
-            if all_data[ii] == -1 or all_data[ii + gap] == -1\
-                    or all_data[ii].has_key(city)==False or all_data[ii + gap].has_key(city)==False:
-                continue
-            real_len += 1
-            dist.append(abs(all_data[ii][city][gap]/50 - all_data[ii + gap][city][0]/50))
-        if len(dist)==0:
-            tmp['-1']=1
-            results.append(tmp)
-            continue
+        # 计算mae
+        valid_data = (np.abs(predict_data - true_data)) * valid_data_index
+        sum_mae = np.sum(valid_data, axis=0) / np.sum(valid_data_index, axis=0)
+        # 计算mse
+        valid_data = ((predict_data - true_data) ** 2) * valid_data_index
+        sum_mse = np.sqrt(np.sum(valid_data, axis=0) / np.sum(valid_data_index, axis=0))
+    except Exception as e:
+        print e
+        return np.zeros([city_num, 1]) - 1, np.zeros([city_num, 1]) - 1
 
-        for ii in range(max(dist)+1):
-            if dist.count(ii)>0:
-                tmp[str(ii)]=float(dist.count(ii))/(real_len)
-        results.append(tmp)
-    return results
+    return (sum_mae, sum_mse)
 
 
-def calculate2(x, y):
+def calculate_level(data, gap):
     '''
-    计算两个组数据的mae和mse,数据中缺失值用-1 表示
-    :param x: 第一组数据
-    :param y: 第二组
-    :return:(mae,mse)
+    :param data:数据 三维数组
+    :param gap: 间隔 int
+    :return: 二维数组 city_num*len(bins) 每个城市的每个等级差所占的比例
+    每一行的元素[0.2,0.6,0.4,0,0]  第一个元素是缺失的数据比例, 第二个元素是预测准确的比例, 第三个是预测等级差为1的比例
     '''
-    f = filter(lambda x: (x[0] + 1) * (x[1] + 1) != 0, zip(x, y))
-    mse = map(lambda x: (x[0] - x[1]) ** 2, f)
-    mae = map(lambda x: abs(x[0] - x[1]), f)
-    c = len(f)
-    if c==0:
-        return [-1,-1]
-    mae = reduce(lambda a, b: a + b, mae)
-    mse = reduce(lambda a, b: a + b, mse)
 
-    return [float(mae) / c, sqrt(float(mse) / c)]
+    try:
+        true_level_data = np.floor(data[gap:, :, 0] / 50)
+        predict_level_data = np.floor(data[:-gap, :, gap] / 50)
+        # -1 代表着缺失的数据,
+        valid_true_index = true_level_data > 0
+        valid_predict_index = predict_level_data > 0
+        # 计算预测和实测皆不为空的index
+        valid_data_index = valid_predict_index * valid_true_index
+
+        result = (1 + np.abs(predict_level_data - true_level_data)) * (valid_data_index)
+        bins = eval(cf.get('calculate', 'bins'))
+
+        level_result = np.zeros([true_level_data.shape[1], len(bins)])
+
+        level_dist = map(lambda x: np.array(np.histogram(x, bins=bins)[0], \
+                                            dtype=float) / sum(np.histogram(x, bins=bins)[0][1:]), result.T)
+    except Exception as e:
+        print e
+        return np.zeros([city_num, len(bins)]) - 1
+
+    return np.array(level_dist)
 
 
-
-def calculate2_back(x, y):
+def calculate_mean_by_day(data):
     '''
-    计算两个组数据的mae和mse,数据中缺失值用-1 表示
-    :param x: 第一组数据
-    :param y: 第二组
-    :return:(mae,mse)
+    把逐小时的数据变成逐日,并清楚无效数据
+    :param data: array city_num*hour_num
+    :return:
     '''
-    avg=[[],[]]
-    for ii in range(0,len(x),24):
-        sum,count=[0,0],0
-        for xx,yy in zip(x[ii:ii+24],y[ii:ii+24]):
-            if xx==-1 or yy==-1:continue
-            sum[0]+=xx
-            sum[1]+=yy
-            count+=1
-        if count==0:pass
-        else:
-            avg[0].append(float(sum[0])/count)
-            avg[1].append(float(sum[1])/count)
-    if len(avg[0])==0:return(-1,-1)
-
-    mae=cal_mae(avg[0],avg[1])
-    mse=cal_mse(avg[0],avg[1])
-    return (mae,mse)
+    data_by_day = (data.reshape([data.shape[0], -1, 24]))
+    valid_data_index_by_day = data_by_day != -1
+    sum_data_by_day = np.sum(data_by_day * valid_data_index_by_day, axis=2)
+    valid_hour_num_by_day = np.sum(valid_data_index_by_day, axis=2)
+    data_by_day = sum_data_by_day / valid_hour_num_by_day
+    return data_by_day
 
 
-def cal_mae(x,y):
-    N=len(x)
-    xy=zip(x,y)
-    x_minius_y=map(lambda  x:abs(x[0]-x[1]) ,xy)
-    mse=(sum(x_minius_y)/N)
-    return  mse
-def cal_mse(x,y):
-    N=len(x)
-    xy=zip(x,y)
-    x_minius_y=map(lambda  x:(x[0]-x[1])**2 ,xy)
-    mse=sqrt(sum(x_minius_y)/N)
-    return  mse
+def calculate_day_mae_mse(data, gap):
+    try:
+        true_data = (data[gap * 24:, :, 0]).T
+        predict_data = data[21:-gap * 24:24, :, 3 + (gap - 1) * 24:3 + (gap) * 24]
+        # 多维矩阵的转置 之前predict_data shape是(4,1711,24) 装置成和true_data一样的形状
+        # (1711,96)
+        predict_data = np.transpose(predict_data, (1, 0, 2))
+        predict_data = predict_data.reshape([predict_data.shape[0], -1])
+
+        # 计算逐日的平均值,需注意剔除无效数据
+
+        predict_by_day = calculate_mean_by_day(predict_data)
+        true_by_day = calculate_mean_by_day(true_data)
+        ##### TODO: 是否需要再判断里面有缺失的数据
+        predict_by_day = np.nan_to_num(predict_by_day)
+        true_by_day = np.nan_to_num(true_by_day)
+
+        valid_true_index = true_by_day != 0
+        valid_predict_index = predict_by_day != 0
+        # 计算预测和实测皆不为空的index
+        valid_data_index = valid_predict_index * valid_true_index
+        predict_by_day=predict_by_day*valid_data_index
+        true_by_day=true_by_day*valid_data_index
+
+        mae = np.sum(np.abs(predict_by_day - true_by_day), axis=1) / np.sum(valid_data_index, axis=1)
+        mse = np.sqrt(np.sum((predict_by_day - true_by_day) ** 2, axis=1) \
+                      / np.sum(valid_data_index, axis=1))
+        print
+    except  Exception as e:
+        print '---------------error-------------'
+        print e
+        mse = mae = np.zeros([city_num, 1]) - 1
+
+    return mae, mse
