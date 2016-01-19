@@ -232,6 +232,10 @@ def draw_city_mae():
 
 
 def generate_csv():
+    '''
+    生成31个城市的逐日的预测mae和mse 前五列是mae,后五列是mse
+    :return:
+    '''
     city_mae = np.zeros([capital_num, day_num])
     city_data = {}
     zone_mae = {}
@@ -250,5 +254,12 @@ def generate_csv():
         jj += 1
     for ii in range(capital_num):
         pass
+    np.savetxt(u'省会城市的逐日数据.csv',tmp,fmt='%1.2f',delimiter=',')
+    np.savetxt(u'所有站点的数据综合数据.csv',csv_by_hour,fmt='%1.3f',delimiter=',')
     return tmp
-
+if __name__ == '__main__':
+    calculate_avg_by_file();
+    draw_city_mae()
+    draw_city_mse()
+    draw_level_avg()
+    generate_csv()
