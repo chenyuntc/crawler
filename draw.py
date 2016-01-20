@@ -190,9 +190,10 @@ def draw_city_mse():
                      '-o', \
                      label=every_city, linewidth='2.0')
             max_num.append(max(capital_data[every_city + u'市']['data']['day_mse']))
-        plt.title(every_zone + u'地区7天预测MSE')
+        plt.title(every_zone + u'地区逐天预测MSE')
         plt.legend(loc='best')
         plt.xlabel(u'提前天数')
+        plt.xticks([1,2,3,4,5])
         plt.ylim([0, max(max_num) * 1.1])
         plt.grid(True)
         plt.savefig(u'mse_' + unicode(every_zone))
@@ -221,8 +222,9 @@ def draw_city_mae():
                      '-o', \
                      label=every_city, linewidth='2.0')
             max_num.append(max(capital_data[every_city + u'市']['data']['day_mae']))
-        plt.title(every_zone + u'地区7天预测MAE')
+        plt.title(every_zone + u'地区逐天预测MAE')
         plt.legend(loc='best')
+        plt.xticks([1,2,3,4,5])
         plt.xlabel(u'提前天数')
         plt.ylim([0, max(max_num) * 1.1])
         plt.grid(True)
