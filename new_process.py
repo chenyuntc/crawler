@@ -6,9 +6,10 @@ from functools import partial
 
 import numpy as np
 
-from util import Connect_DB, ReadOneStation, insert_to_mongo, wrap
+from util import Connect_DB, ReadOneStation, insert_to_mongo, wrap,get_files
 from get_config import *
 
+all_files = (get_files(start_time, end_time))
 
 def map_line(x):
     '''
@@ -60,7 +61,7 @@ def process_all():
         try:
             new_hour_info = process_file(file)
         except Exception as e:
-            jj+=1
+            jj += 1
             print(e)
             continue
 
