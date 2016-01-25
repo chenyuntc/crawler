@@ -115,7 +115,7 @@ end_time=2015-11-06
     '''
     time_start = datetime.datetime.strptime(str_start+'00',"%Y-%m-%d%H")
     stamp_start = math.floor(time.mktime(time_start.timetuple()))
-    time_now = datetime.datetime.strptime(str_now+'00',"%Y-%m-%d%H")
+    time_now = datetime.datetime.strptime(str_now+'23',"%Y-%m-%d%H")
     stamp_now = math.floor(time.mktime(time_now.timetuple()))
     aqi_data_tmp = collection.find({'station_code':{'$lte':'2710A'},
                                     "timestamp":{"$gte":math.floor(stamp_start),'$lte':math.floor(stamp_now)},\
