@@ -13,7 +13,7 @@ all_files = (get_files(start_time, end_time))
 
 def map_line(x):
     '''
-    """从文件的每一行读取有用信息"""
+    从文件的每一行读取有用信息
     缺失数据记录为-1
     :param x: 一行数据 str 以tab区分
     :return: [站点id,数据*241]
