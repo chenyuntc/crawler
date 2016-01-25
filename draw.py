@@ -193,7 +193,7 @@ def draw_city_mse():
         plt.title(every_zone + u'地区逐天预测MSE')
         plt.legend(loc='best')
         plt.xlabel(u'提前天数')
-        plt.xticks([1,2,3,4,5])
+        plt.xticks(range(1,day_num+1))
         plt.ylim([0, max(max_num) * 1.1])
         plt.grid(True)
         plt.savefig(u'mse_' + unicode(every_zone))
@@ -224,7 +224,7 @@ def draw_city_mae():
             max_num.append(max(capital_data[every_city + u'市']['data']['day_mae']))
         plt.title(every_zone + u'地区逐天预测MAE')
         plt.legend(loc='best')
-        plt.xticks([1,2,3,4,5])
+        plt.xticks(range(1,day_num+1))
         plt.xlabel(u'提前天数')
         plt.ylim([0, max(max_num) * 1.1])
         plt.grid(True)
@@ -248,7 +248,7 @@ def generate_csv():
         # city_mae[jj]=capital_data[ii]['data'][2][0][:day_num]
         city_data[ii] = capital_data[ii]['data']
         jj += 1
-    tmp = np.zeros([31, 10])
+    tmp = np.zeros([31, 14])
     jj = 0
     for ii in city_data:
         print(ii)
