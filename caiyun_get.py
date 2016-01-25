@@ -10,7 +10,7 @@ import time
 import pymongo
 from util import connect
 
-path='aqi/caiyun/'
+path='/home/ubuntu/cy/moji/moji/aqi/caiyun/'
 host='54.223.101.153'
 port=27110
 __author__ = 'cy'
