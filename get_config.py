@@ -1,7 +1,6 @@
 #coding:utf8
 from ConfigParser import ConfigParser
 import pymongo
-from util import get_files
 
 __author__ = 'cy'
 cf = ConfigParser()
@@ -12,7 +11,6 @@ file_path = cf.get('file', 'filepath')
 start_time = cf.get('file', 'start_time')
 end_time = cf.get('file', 'end_time')
 gaps = eval(cf.get('calculate', 'gaps'))
-all_files = (get_files(start_time, end_time))
 day_gaps=eval(cf.get('calculate','day_gaps'))
 mongo_host=cf.get('mongodb','host')
 mongo_port=int(cf.get('mongodb','port'))
