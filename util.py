@@ -96,7 +96,7 @@ def get_files(start_time, end_time):
     for every_day in xrange(int(start_time),int(end_time),86400):
         tmp_time=time.strptime(time.ctime(every_day))
         tmp_day=time.strftime('%Y%m/%d/',tmp_time)
-        tmp_day2 = time.strftime('pm2_5%Y%m%d', tmp_time)
+        tmp_day2 = time.strftime('%Y%m%d', tmp_time)
         tmp_day3=time.strftime('%Y%m%d', tmp_time)
         h_24 = ['0' + str(ii) for ii in range(10)] + [str(ii) for ii in range(10, 24)]
         if target=='new':
