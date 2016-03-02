@@ -78,6 +78,37 @@ def calculate_avg_by_file():
     plt.grid(True)
     plt.show()
 
+def get_xticks(x,start_time):
+    return ([len(x)/7*ii for ii in range(7)],[ii for ii in range(7)])
+
+def compare(hour_num,data,gap=3):
+    '''
+    画出提前n小时的预测值和实测值的对比
+    :param hour_num:
+    :param data:
+    :param gap:
+    :return:
+    '''
+    true=data[::gap,0]
+    plt.plot(true,label='true',lw=2)
+
+    for ii in range(gap,hour_num,gap):
+        pre_data=data[:-ii:gap,ii:ii+1]
+        pre_fill=np.zeros([ii/gap,1])-np.NaN
+        pre=np.vstack([pre_fill,pre_data])
+        pre[pre==-1]=np.NaN
+        #plt.scatter(range(len(pre)),pre,label=ii)
+        plt.plot(pre,label=ii)
+
+    x,l=get_xticks(true,1)
+    plt.xticks(x,l)
+    plt.legend()
+    plt.show()
+
+
+
+
+
 
 
 def draw_level_avg():
@@ -242,13 +273,12 @@ def generate_csv():
     city_data = {}
     zone_mae = {}
     jj = 0
-    f = open('city_data.csv', 'w')
     new_x_ticks = [ii[:-1] for ii in x_ticks]
     for ii in x_ticks:
         # city_mae[jj]=capital_data[ii]['data'][2][0][:day_num]
         city_data[ii] = capital_data[ii]['data']
         jj += 1
-    tmp = np.zeros([31, 14])
+    tmp = np.zeros([capital_num, 2*day_num])
     jj = 0
     for ii in city_data:
         print(ii)
