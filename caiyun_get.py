@@ -8,12 +8,15 @@ import os
 from urllib2 import urlopen
 import time
 import pymongo
-from util import connect
 
 path='/home/ubuntu/cy/moji/moji/aqi/caiyun/'
 host='54.223.101.153'
 port=27110
 __author__ = 'cy'
+def connect(host,port=27110):
+    client = pymongo.MongoClient(host, port)
+    db = client.test
+    return db
 
 
 def get_data(location):
