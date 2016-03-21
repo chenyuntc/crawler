@@ -7,8 +7,8 @@ capital_num=31
 # from get_config import  npz_path
 # from get_config import  array_name
 
-npz_path='./new_data.npz'
-array_name='new_data'
+npz_path='./data-38.npz'
+array_name='arr_0'
 import  numpy as np
 from util import connect
 
@@ -104,7 +104,7 @@ def cal_per_less50(data):
 
 if __name__ == '__main__':
     all_data=get_data_of_mean()#31个城市逐小时预测未来240个小时的数据(31, 336, 241)
-    pre_day_num=7;useful_day_num=16
+    pre_day_num=7;useful_day_num=9
 
     #31个城市逐天晚上九点实测和预测（预测和实测均是逐小时）(31, 168, 7)
     day_data=wrap(data=all_data,pre_day_num=pre_day_num,useful_day_num=useful_day_num)
@@ -121,11 +121,12 @@ if __name__ == '__main__':
     labels=[u'实测AQI']+[u'提前%s天预测值' %jjj for jjj in range(1,pre_day_num)]
     for city_index in range(capital_num ):
         for ii in range(pre_day_num):
-            #important 7是除夕
-            plt.bar(np.arange(useful_day_num)+7+width*ii,\
+            #important 7是除夕 np.arange(useful_day_num)+7
+            plt.bar(np.arange(useful_day_num)-1+width*ii,\
                     day_mean[city_index,:,ii],1.0/(pre_day_num+2),color=color[ii],label=labels[ii])
         plt.title(capitals[city_index])
-        plt.xlabel(u'二月(日期)')
+        plt.xticks(np.arange(useful_day_num)-1,[u'2月29']+[i+1 for i in range(useful_day_num-1)])
+        plt.xlabel(u'三月(日期)')
         plt.ylabel(u'aqi')
         plt.legend(ncol=2)
         plt.savefig(capitals[city_index]+u'预测和实测的比较')
@@ -191,17 +192,15 @@ if __name__ == '__main__':
                     right_day[capitals_index[ii+u'市']] ,1.0/(pre_day_num+2),color=color[jj])
             plt.xticks(np.arange(0,len(zone[every_zone] ))+0.2,zone[every_zone])
         plt.title(every_zone+u'预报相差为1以内的天数')
-
         plt.ylabel(u'天数')
-
         plt.legend(loc=0)
         plt.savefig(every_zone+u'预报等级相差1以内的天数')
         plt.figure()
 
 
 
-
     all_result=cal_per_less50(all_data)
+    np.savetxt(u'预报相差小于50以内的比例.csv',1-all_result,fmt='%1.3f',delimiter=',')
     for every_zone in zone:
         for ii,jj in zip(zone[every_zone],xrange(len(zone[every_zone] ))):
             plt.plot(1-all_result[capitals_index[ii+u'市']][:],lw=2,label=ii)
@@ -214,6 +213,7 @@ if __name__ == '__main__':
         plt.savefig(every_zone+u'预报相差小于50以内的比例')
 
         plt.figure()
+
 
 
     #
